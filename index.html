@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intranet Profesional - Gestión de Tienda (Producción)</title>
+  
+  <!-- Tailwind CSS para diseño moderno -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para analíticas avanzadas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Iconos Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Transiciones fluidas */
+    .transition-all {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ef4444;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col pb-16 md:pb-0 selection:bg-red-600 selection:text-white">
+
+  <!-- Encabezado Principal (Estilo Bauhaus Premium) -->
+  <header class="bg-gradient-to-r from-red-750 via-red-600 to-slate-950 text-white shadow-xl px-6 py-4 flex flex-wrap justify-between items-center gap-4 border-b border-red-900/30">
+    <div class="flex items-center gap-3">
+      <div class="bg-slate-950/80 p-2.5 rounded-lg text-white border border-red-500/40 shadow-inner">
+        <i data-lucide="store" class="w-6 h-6 text-red-500"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+          <span class="bg-white text-red-700 px-2 py-0.5 rounded font-black text-xs tracking-wider">BAUHAUS</span>
+          <span class="font-light text-slate-100">Intranet Profesional</span>
+        </h1>
+        <p class="text-[11px] text-red-200 tracking-wide font-medium">Portal Corporativo Sincronizado en Tiempo Real</p>
+      </div>
+    </div>
+    
+    <!-- Estado de Conexión, Usuario y Controles -->
+    <div class="flex flex-wrap items-center gap-3 text-sm">
+      <!-- Selector rápido de Código de Tienda / Grupo -->
+      <div class="flex items-center gap-1 bg-slate-950/90 px-3 py-1.5 rounded-lg border border-slate-800">
+        <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Tienda:</span>
+        <input id="storeCodeNav" type="text" onchange="changeStoreCode(this.value)" class="bg-transparent text-xs font-mono font-bold text-red-400 outline-none w-24 border-b border-transparent focus:border-red-500 transition-all" title="Cambiar código de sincronización">
+      </div>
+
+      <!-- Detector de Dispositivo -->
+      <div id="deviceIndicator" class="flex items-center"></div>
+
+      <!-- Indicador de Red / Firebase -->
+      <div class="flex items-center gap-4 bg-slate-950/90 px-4 py-2 rounded-lg border border-slate-800">
+        <div class="flex items-center gap-2">
+          <span id="syncStatusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <span id="syncStatusText" class="text-xs font-semibold text-slate-300">Conectando...</span>
+        </div>
+        <div class="hidden sm:block border-l border-slate-800 h-4"></div>
+        <!-- Identificador de Usuario/Colaborador (Hacer clic para editar) -->
+        <button onclick="openUserModal()" class="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 transition-all cursor-pointer" title="Haga clic para cambiar su nombre">
+          <i data-lucide="user" class="w-3.5 h-3.5 text-red-500"></i>
+          <span id="userDisplayId" class="font-semibold truncate max-w-[120px]">Cargando...</span>
+        </button>
+      </div>
+
+      <!-- Botón Configuración de Base de Datos -->
+      <button onclick="toggleConfigModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg border border-slate-700 transition-all" title="Configurar Firebase">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal (Layout Adaptable) -->
+  <div class="flex-1 flex flex-col md:flex-row min-h-0">
+    
+    <!-- Barra Lateral de Navegación (PC) -->
+    <aside class="hidden md:flex w-full md:w-64 bg-slate-950 text-slate-300 p-5 flex-col justify-between gap-6 border-r border-slate-800/80">
+      <div class="space-y-6">
+        <div>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-3">Navegación</span>
+          <nav class="space-y-1.5">
+            <button onclick="showTab('dashboard')" id="btn-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-semibold transition-all bg-red-650 text-white shadow-lg shadow-red-900/20">
+              <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+              <span>Dashboard</span>
+            </button>
+            <button onclick="showTab('tasks')" id="btn-tasks" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-semibold transition-all text-slate-400 hover:bg-slate-900 hover:text-white border border-transparent hover:border-slate-800">
+              <i data-lucide="check-square" class="w-5 h-5"></i>
+              <span>Gestión de Tareas</span>
+            </button>
+            <button onclick="showTab('news')" id="btn-news" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-semibold transition-all text-slate-400 hover:bg-slate-900 hover:text-white border border-transparent hover:border-slate-800">
+              <i data-lucide="megaphone" class="w-5 h-5"></i>
+              <span>Novedades de Tienda</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="border-t border-slate-900 pt-6">
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-3">Acciones de Datos</span>
+          <div class="space-y-2">
+            <button onclick="exportData()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-lg text-xs font-semibold transition-all border border-slate-800">
+              <i data-lucide="download" class="w-4 h-4 text-red-500"></i>
+              <span>Exportar JSON</span>
+            </button>
+            <div class="relative">
+              <input type="file" id="importFile" onchange="importData(event)" class="hidden">
+              <label for="importFile" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-lg text-xs font-semibold transition-all border border-slate-800 cursor-pointer text-center">
+                <i data-lucide="upload" class="w-4 h-4 text-red-500"></i>
+                <span>Importar JSON</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado Técnico -->
+      <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center">
+        <div class="flex items-center justify-center gap-2 text-[11px] text-emerald-400 font-bold">
+          <span class="relative flex h-2.5 w-2.5">
+            <span id="pingStatusPulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span id="pingStatusDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span id="sourceLabel">Base de datos Activa</span>
+        </div>
+        <p id="technicalDetails" class="text-[9px] text-slate-500 mt-1.5 truncate">Proyecto: bhs807</p>
+      </div>
+    </aside>
+
+    <!-- Barra de Navegación Inferior (Móvil) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-850 flex justify-around items-center py-2 px-4 z-40 shadow-2xl text-slate-400">
+      <button onclick="showTab('dashboard')" id="mobile-btn-dashboard" class="mobile-nav-btn flex flex-col items-center gap-1 text-white">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold">Panel</span>
+      </button>
+      <button onclick="showTab('tasks')" id="mobile-btn-tasks" class="mobile-nav-btn flex flex-col items-center gap-1 hover:text-white transition-all">
+        <i data-lucide="check-square" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold">Tareas</span>
+      </button>
+      <button onclick="showTab('news')" id="mobile-btn-news" class="mobile-nav-btn flex flex-col items-center gap-1 hover:text-white transition-all">
+        <i data-lucide="megaphone" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold">Novedades</span>
+      </button>
+    </nav>
+
+    <!-- Contenedor de Vistas -->
+    <main class="flex-1 p-6 overflow-y-auto bg-slate-900">
+      
+      <!-- Mensajes de Notificación Internos (Toast Adaptado) -->
+      <div id="toastMessage" class="hidden fixed bottom-20 md:bottom-6 right-6 z-50 flex items-center gap-3 bg-slate-950 text-white px-5 py-4 rounded-xl shadow-2xl border border-red-500/20 transition-all transform translate-y-0 max-w-md">
+        <div id="toastIcon" class="text-red-500">
+          <i data-lucide="info" class="w-6 h-6"></i>
+        </div>
+        <div class="flex-1">
+          <h4 id="toastTitle" class="font-bold text-sm text-slate-100">Notificación</h4>
+          <p id="toastBody" class="text-xs text-slate-400 mt-0.5">Mensaje del sistema.</p>
+        </div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white transition-all ml-2">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Visor de Imágenes Integrado (Lightbox) -->
+      <div id="imageLightbox" class="hidden fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-4 transition-all">
+        <button onclick="closeLightbox()" class="absolute top-5 right-5 text-white bg-slate-850 hover:bg-red-650 p-2.5 rounded-xl transition-all shadow-lg border border-slate-700">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <div class="max-w-4xl max-h-[80vh] flex items-center justify-center">
+          <img id="lightboxImage" src="" alt="Vista ampliada" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-slate-800 object-contain">
+        </div>
+        <p id="lightboxCaption" class="text-slate-300 mt-4 text-sm max-w-md text-center bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-800"></p>
+      </div>
+
+      <!-- MODAL PARA CAMBIAR NOMBRE DE COLABORADOR -->
+      <div id="userModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-850 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+          <div class="bg-slate-950 border-b border-slate-850 px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="user-cog" class="w-5 h-5 text-red-500"></i>
+              <span>Tu Perfil de Colaborador</span>
+            </h3>
+            <button onclick="closeUserModal()" class="text-slate-400 hover:text-white">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="p-6 space-y-4">
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Define tu nombre real para identificarte correctamente ante tus compañeros en esta tienda.
+            </p>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nombre o Alias de Tienda</label>
+              <input id="userNameInput" type="text" placeholder="Ej: Juan Pérez" class="w-full bg-slate-950 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+            </div>
+            <div class="text-[10px] text-slate-550 font-mono">
+              ID Técnico de Sesión: <span id="technicalUserIdSpan" class="text-slate-400">...</span>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button onclick="closeUserModal()" class="px-4 py-2 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold">Cancelar</button>
+              <button onclick="saveCollaboratorName()" class="px-4 py-2 bg-red-650 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow">Guardar Nombre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DE CONFIGURACIÓN DE FIREBASE (SEGURIDAD PARA GITHUB) -->
+      <div id="configModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-850 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+          <div class="bg-slate-950 border-b border-slate-850 px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2">
+              <i data-lucide="database" class="w-5 h-5 text-red-500"></i>
+              <span>Configuración de Base de Datos</span>
+            </h3>
+            <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-white">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="p-6 space-y-4">
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Para garantizar que tus datos estén protegidos en entornos públicos como GitHub, puedes usar credenciales personalizadas. Si dejas esto vacío, se usará el backend por defecto de la tienda.
+            </p>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">JSON de Configuración Firebase</label>
+                <textarea id="firebaseConfigInput" rows="6" placeholder='{ "apiKey": "...", "authDomain": "...", ... }' class="w-full font-mono text-xs px-4 py-3 bg-slate-950 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-slate-200 transition-all"></textarea>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Código de Tienda / Grupo</label>
+                <input id="appIdInput" type="text" placeholder="bhs807-prod" class="w-full font-mono text-xs px-4 py-2.5 bg-slate-950 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-slate-200 transition-all">
+              </div>
+            </div>
+            <div class="flex justify-between items-center pt-2">
+              <button onclick="resetFirebaseConfig()" class="text-xs text-red-500 hover:text-red-400 font-semibold underline">Restaurar Original</button>
+              <div class="flex gap-2">
+                <button onclick="toggleConfigModal()" class="px-4 py-2 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold">Cancelar</button>
+                <button onclick="saveFirebaseConfig()" class="px-4 py-2 bg-red-650 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow">Guardar Cambios</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="dashboard" class="tab-content block space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-100">Panel de Control de Tienda</h2>
+            <p class="text-xs text-slate-400">Resumen operativo y métricas de desempeño de hoy.</p>
+          </div>
+          <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-850 flex items-center gap-2 text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Estadísticas en vivo</span>
+          </div>
+        </div>
+
+        <!-- Tarjetas KPI -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-950 p-5 rounded-xl border border-slate-850 shadow-lg flex items-center justify-between hover:border-slate-800 transition-all">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tareas Totales</p>
+              <h3 id="kpiTotal" class="text-3xl font-black text-slate-100 mt-1">0</h3>
+            </div>
+            <div class="p-3 bg-slate-900 rounded-lg text-slate-400">
+              <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-5 rounded-xl border border-slate-850 shadow-lg flex items-center justify-between hover:border-slate-800 transition-all">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pendientes</p>
+              <h3 id="kpiPending" class="text-3xl font-black text-amber-500 mt-1">0</h3>
+            </div>
+            <div class="p-3 bg-amber-950/40 rounded-lg text-amber-500 border border-amber-900/30">
+              <i data-lucide="alert-circle" class="w-6 h-6"></i>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-5 rounded-xl border border-slate-850 shadow-lg flex items-center justify-between hover:border-slate-800 transition-all">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">En Curso</p>
+              <h3 id="kpiProgress" class="text-3xl font-black text-red-500 mt-1">0</h3>
+            </div>
+            <div class="p-3 bg-red-950/40 rounded-lg text-red-500 border border-red-900/30">
+              <i data-lucide="loader" class="w-6 h-6 animate-spin"></i>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-5 rounded-xl border border-slate-850 shadow-lg flex items-center justify-between hover:border-slate-800 transition-all">
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completadas</p>
+              <h3 id="kpiDone" class="text-3xl font-black text-emerald-500 mt-1">0</h3>
+            </div>
+            <div class="p-3 bg-emerald-950/40 rounded-lg text-emerald-500 border border-emerald-900/30">
+              <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila de Calendario, Tareas del Día y Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Columna Izquierda (Ancho 2/3): Gráfico y Listado de Tareas del Día -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- Gráfico de Operaciones -->
+            <div class="bg-slate-950 p-6 rounded-xl border border-slate-850 shadow-lg">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold text-slate-200">Estado de Operaciones del Centro</h3>
+                <span class="text-[10px] text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">Visualización de Datos</span>
+              </div>
+              <div class="relative w-full h-[220px]">
+                <canvas id="chart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+
+            <!-- Listado de Tareas del Día Seleccionado -->
+            <div class="bg-slate-950 p-6 rounded-xl border border-slate-850 shadow-lg">
+              <div class="flex items-center justify-between mb-4 border-b border-slate-900 pb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="calendar-check" class="w-5 h-5 text-red-500"></i>
+                  <h3 id="dayTasksTitle" class="text-sm font-bold text-slate-200">Tareas de Hoy</h3>
+                </div>
+                <span id="dayTasksDate" class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800">Cargando...</span>
+              </div>
+              <div id="dayTasksContainer" class="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+                <!-- Se inyecta dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Derecha (Ancho 1/3): Calendario Mensual -->
+          <div class="lg:col-span-1">
+            <div class="bg-slate-950 p-6 rounded-xl border border-slate-850 shadow-lg flex flex-col h-full justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-red-500"></i>
+                    <span>Calendario de Tienda</span>
+                  </h3>
+                  <!-- Navegación Calendario -->
+                  <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button onclick="prevMonth()" class="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded transition-all">
+                      <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="nextMonth()" class="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded transition-all">
+                      <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="text-center font-black text-xs text-red-500 mb-3 uppercase tracking-wider" id="calendarMonthYear">
+                  Cargando...
+                </div>
+
+                <!-- Cabeceras de días de semana -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                  <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
+                </div>
+
+                <!-- Cuadrícula de días -->
+                <div class="grid grid-cols-7 gap-1.5 text-center text-xs" id="calendarDays">
+                  <!-- Se inyecta dinámicamente -->
+                </div>
+              </div>
+
+              <!-- Leyenda Informativa -->
+              <div class="mt-6 pt-4 border-t border-slate-900 flex justify-around text-[10px] text-slate-400">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded bg-red-950/60 border border-red-500/40 block"></span>
+                  <span>Con tareas</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded border border-slate-450 block"></span>
+                  <span>Seleccionado</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB: TASKS ================= -->
+      <section id="tasks" class="tab-content hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-100">Gestión de Tareas</h2>
+            <p class="text-xs text-slate-400">Administra, delega y comprueba el avance de las directivas.</p>
+          </div>
+          <button onclick="toggleNewTaskForm()" class="flex items-center gap-2 bg-red-650 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-900/10">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Nueva Tarea</span>
+          </button>
+        </div>
+
+        <!-- Formulario de Creación / Edición -->
+        <div id="taskFormContainer" class="hidden bg-slate-950 rounded-xl border border-slate-850 shadow-xl overflow-hidden transition-all duration-300">
+          <div class="bg-slate-900 border-b border-slate-850 px-6 py-4 flex justify-between items-center">
+            <h3 class="font-bold text-slate-200 text-sm">Nueva Directiva de Tienda</h3>
+            <button onclick="toggleNewTaskForm()" class="text-slate-400 hover:text-white transition-all">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <form onsubmit="event.preventDefault(); saveTask();" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Título de la Tarea*</label>
+              <input id="title" required placeholder="Ej: Reposición de maderas en pasillo 5" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Responsable Asignado*</label>
+              <input id="responsible" required placeholder="Nombre de empleado" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Prioridad*</label>
+              <select id="priority" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+                <option value="Alta">Alta 🚨</option>
+                <option value="Media" selected>Media ⚠️</option>
+                <option value="Baja">Baja 🟢</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Fecha Límite*</label>
+              <input type="date" id="date" required class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Estado de la Tarea*</label>
+              <select id="status" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all">
+                <option value="Pendiente" selected>Pendiente</option>
+                <option value="En curso">En curso</option>
+                <option value="Completada">Completada</option>
+              </select>
+            </div>
+
+            <!-- Evidencia Visual (Cámara) -->
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Evidencia Visual</label>
+              <div class="flex items-center gap-3">
+                <input type="file" id="taskCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleTaskPhoto(event)">
+                <button type="button" onclick="document.getElementById('taskCameraInput').click()" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-slate-200 hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all border border-slate-800">
+                  <i data-lucide="camera" class="w-4 h-4 text-red-500"></i>
+                  <span>Hacer Foto / Subir</span>
+                </button>
+                <span id="taskPhotoStatus" class="text-xs text-slate-500 italic">Ninguna foto</span>
+              </div>
+              
+              <!-- Vista previa de foto -->
+              <div id="taskPhotoPreviewContainer" class="hidden mt-3 relative w-24 h-24 rounded-lg border border-slate-850 overflow-hidden shadow-md">
+                <img id="taskPhotoPreview" src="" class="w-full h-full object-cover">
+                <button type="button" onclick="clearTaskPhoto()" class="absolute top-1 right-1 bg-red-650 text-white p-1 rounded-full hover:bg-red-700 shadow transition-all">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Observaciones / Descripción</label>
+              <textarea id="obs" placeholder="Detalles operativos de la tarea..." rows="3" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-sm text-slate-200 transition-all"></textarea>
+            </div>
+            
+            <div class="md:col-span-2 flex justify-end gap-3 pt-2">
+              <button type="button" onclick="toggleNewTaskForm()" class="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-850 text-slate-300 rounded-lg text-xs font-bold transition-all">
+                Cancelar
+              </button>
+              <button type="submit" class="px-5 py-2.5 bg-red-650 hover:bg-red-600 text-white rounded-lg text-xs font-bold shadow-lg transition-all">
+                Guardar Tarea
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Filtro y Listado de Tareas -->
+        <div class="bg-slate-950 rounded-xl border border-slate-850 shadow-lg overflow-hidden">
+          <div class="p-4 border-b border-slate-850 bg-slate-950/50 flex flex-wrap items-center justify-between gap-4">
+            <div class="relative w-full sm:w-80">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </span>
+              <input id="search" placeholder="Buscar por título o responsable..." onkeyup="render()" class="w-full bg-slate-900 pl-9 pr-4 py-2 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-xs text-slate-200 transition-all">
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Filtrando en tiempo real</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-900/60 text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-850">
+                  <th class="px-6 py-4">Directiva / Observación</th>
+                  <th class="px-6 py-4">Responsable</th>
+                  <th class="px-6 py-4">Prioridad</th>
+                  <th class="px-6 py-4">Fecha Límite</th>
+                  <th class="px-6 py-4">Estado</th>
+                  <th class="px-6 py-4 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="taskRows" class="divide-y divide-slate-900 text-xs text-slate-300">
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                    <div class="flex flex-col items-center gap-3">
+                      <i data-lucide="inbox" class="w-8 h-8 text-slate-600"></i>
+                      <span>Cargando listado de tareas corporativas...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: NEWS ================= -->
+      <section id="news" class="tab-content hidden space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-100">Tablón de Novedades</h2>
+          <p class="text-xs text-slate-400">Instrucciones y circulares oficiales del equipo de dirección.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Columna Crear Anuncio -->
+          <div class="lg:col-span-1">
+            <div class="bg-slate-950 p-6 rounded-xl border border-slate-850 shadow-lg sticky top-6">
+              <h3 class="font-bold text-md text-slate-200 mb-4 flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-5 h-5 text-red-500"></i>
+                <span>Publicar Comunicado</span>
+              </h3>
+              <form onsubmit="event.preventDefault(); saveNews();" class="space-y-4">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Título del Anuncio*</label>
+                  <input id="newsTitle" required placeholder="Ej: Inventario de herramientas" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-xs text-slate-200 transition-all">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Contenido del Comunicado*</label>
+                  <textarea id="newsText" required placeholder="Escribe los detalles aquí..." rows="4" class="w-full bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-850 focus:border-red-500 outline-none text-xs text-slate-200 transition-all"></textarea>
+                </div>
+
+                <!-- Foto Novedad -->
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Imagen Adjunta</label>
+                  <div class="flex items-center gap-3">
+                    <input type="file" id="newsCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleNewsPhoto(event)">
+                    <button type="button" onclick="document.getElementById('newsCameraInput').click()" class="flex items-center gap-2 px-3 py-2 bg-slate-900 text-slate-300 hover:bg-slate-800 rounded-lg text-xs font-semibold border border-slate-800 transition-all">
+                      <i data-lucide="camera" class="w-4 h-4 text-red-500"></i>
+                      <span>Tomar Foto</span>
+                    </button>
+                    <span id="newsPhotoStatus" class="text-xs text-slate-500 italic">Sin adjunto</span>
+                  </div>
+                  
+                  <!-- Vista previa Foto Novedad -->
+                  <div id="newsPhotoPreviewContainer" class="hidden mt-3 relative w-full h-32 rounded-lg border border-slate-850 overflow-hidden shadow-md">
+                    <img id="newsPhotoPreview" src="" class="w-full h-full object-cover">
+                    <button type="button" onclick="clearNewsPhoto()" class="absolute top-2 right-2 bg-red-650 text-white p-1 rounded-full hover:bg-red-700 shadow transition-all">
+                      <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-red-650 hover:bg-red-600 text-white py-3 rounded-lg text-xs font-bold shadow-lg transition-all">
+                  <i data-lucide="send" class="w-4 h-4"></i>
+                  <span>Publicar en Tablón</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Columna Tablón de Anuncios -->
+          <div class="lg:col-span-2 space-y-4">
+            <h3 class="font-bold text-slate-400 text-xs uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-red-500"></i>
+              <span>Tablón de Comunicados</span>
+            </h3>
+            
+            <div id="newsContainer" class="space-y-4">
+              <div class="bg-slate-950 p-6 rounded-xl border border-slate-850 text-center text-slate-500">
+                <p>Cargando comunicados...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Pie de página -->
+  <footer class="bg-slate-950 text-slate-600 text-[10px] px-6 py-4 border-t border-slate-900 text-center">
+    <p>© 2026 Intranet Profesional de Tienda - Sincronización en la Nube con Seguridad Sandbox. Inspirado en el Estilo Bauhaus España.</p>
+  </footer>
+
+  <!-- ================= FIREBASE SDK INTEGRATION ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- CONFIGURACIÓN DE RESPALDO Y GESTIÓN DE CREDENCIALES ---
+    const DEFAULT_CONFIG = {
+      apiKey: "AIzaSyALCBfhcIjR5FHvVVEPCyfHJOsysrTM6kw",
+      authDomain: "bhs807.firebaseapp.com",
+      projectId: "bhs807",
+      storageBucket: "bhs807.firebasestorage.app",
+      messagingSenderId: "703824622381",
+      appId: "1:703824622381:web:f48e9de2b425ae7fcad9a4"
+    };
+
+    // Recuperar configuración personalizada desde localStorage si existe
+    let customConfig = null;
+    try {
+      const stored = localStorage.getItem('bauhaus_custom_firebase_config');
+      if (stored) {
+        customConfig = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar la configuración personalizada de Firebase:", e);
+    }
+
+    const firebaseConfig = customConfig || (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : DEFAULT_CONFIG);
+    
+    // REGLA DE SEGURIDAD CRÍTICA: El appId principal de la ruta DEBE ser exactamente el __app_id del entorno
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'bhs807-prod';
+
+    // Obtener el código de tienda personalizado para agrupar los datos de forma aislada
+    const storeCode = localStorage.getItem('bauhaus_custom_app_id') || 'bhs807-prod';
+
+    // Establecer el Código de la tienda en el INPUT superior al cargar
+    document.getElementById('storeCodeNav').value = storeCode;
+
+    // Inicialización del ecosistema Firebase
+    let app, auth, db;
+    let currentUser = null;
+    let rawTasks = []; // Datos crudos de Firebase para todas las tiendas
+    let rawNews = [];  // Datos crudos de Firebase para todas las tiendas
+    let tasks = [];    // Datos filtrados para la tienda actual
+    let news = [];     // Datos filtrados para la tienda actual
+    let chartInstance = null;
+    let tempTaskPhoto = "";
+    let tempNewsPhoto = "";
+    let listenersAttached = false;
+
+    // Estado local para control del Calendario Interactivo
+    let currentCalendarDate = new Date();
+    let selectedCalendarDate = new Date();
+
+    // ================= PERSISTENCIA DE IDENTIDAD LOCAL =================
+    let collaboratorName = localStorage.getItem('bauhaus_collaborator_name');
+    if (!collaboratorName) {
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      collaboratorName = `Colaborador-${randomId}`;
+      localStorage.setItem('bauhaus_collaborator_name', collaboratorName);
+    }
+
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (err) {
+      console.error("Fallo crítico en la inicialización de Firebase:", err);
+      updateSyncStatus('Sin conexión', 'bg-red-500');
+    }
+
+    // Elementos del DOM
+    const syncStatusIndicator = document.getElementById('syncStatusIndicator');
+    const syncStatusText = document.getElementById('syncStatusText');
+    const userDisplayId = document.getElementById('userDisplayId');
+    const taskRows = document.getElementById('taskRows');
+    const newsContainer = document.getElementById('newsContainer');
+
+    function refreshIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    // ================= DETECTOR DE DISPOSITIVO =================
+    function detectDevice() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      const deviceEl = document.getElementById('deviceIndicator');
+      if (deviceEl) {
+        if (isMobile) {
+          deviceEl.innerHTML = `
+            <span class="bg-red-950/80 text-red-400 text-[10px] px-2.5 py-1 rounded-full border border-red-900/30 flex items-center gap-1.5 font-bold">
+              <i data-lucide="smartphone" class="w-3 h-3"></i> MÓVIL
+            </span>
+          `;
+        } else {
+          deviceEl.innerHTML = `
+            <span class="bg-slate-900 text-slate-300 text-[10px] px-2.5 py-1 rounded-full border border-slate-200 flex items-center gap-1.5 font-bold">
+              <i data-lucide="monitor" class="w-3 h-3"></i> ESCRITORIO
+            </span>
+          `;
+        }
+        refreshIcons();
+      }
+    }
+    window.addEventListener('resize', detectDevice);
+    detectDevice();
+
+    // Cambiar de tienda/grupo dinámicamente sin romper las reglas de Firebase
+    window.changeStoreCode = function(newId) {
+      const cleanId = newId.trim().replace(/[^a-zA-Z0-9-_]/g, '');
+      if (!cleanId) return;
+      localStorage.setItem('bauhaus_custom_app_id', cleanId);
+      showToast('Tienda Cambiada', `Conectando al canal: ${cleanId}`, 'text-emerald-500');
+      setTimeout(() => window.location.reload(), 1000);
+    };
+
+    // ================= ARRANQUE Y AUTENTICACIÓN SECUENCIAL REQUERIDA =================
+    const startApp = async () => {
+      try {
+        updateSyncStatus('Autenticando...', 'bg-amber-500');
+        
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+          if (user) {
+            userDisplayId.textContent = collaboratorName;
+            updateSyncStatus('En línea', 'bg-emerald-500');
+            
+            if (!listenersAttached) {
+              setupFirestoreListeners();
+            }
+          } else {
+            userDisplayId.textContent = "Desconectado";
+            updateSyncStatus('Sin Sesión', 'bg-red-500');
+          }
+          refreshIcons();
+        });
+
+      } catch (error) {
+        console.error("Error de conexión inicial a la nube:", error);
+        updateSyncStatus('Error Red', 'bg-red-500');
+      }
+    };
+
+    // Ejecutar arranque inicial
+    startApp();
+
+    // ================= MODAL DE CAMBIO DE NOMBRE =================
+    window.openUserModal = function() {
+      const modal = document.getElementById('userModal');
+      const input = document.getElementById('userNameInput');
+      const techSpan = document.getElementById('technicalUserIdSpan');
+      
+      if (modal && input) {
+        input.value = collaboratorName;
+        if (currentUser) {
+          techSpan.textContent = currentUser.uid;
+        }
+        modal.classList.remove('hidden');
+      }
+    };
+
+    window.closeUserModal = function() {
+      document.getElementById('userModal').classList.add('hidden');
+    };
+
+    window.saveCollaboratorName = function() {
+      const input = document.getElementById('userNameInput');
+      if (input) {
+        const val = input.value.trim();
+        if (val.length < 2) {
+          showToast('Nombre inválido', 'Introduce un nombre de al menos 2 letras.', 'text-amber-500');
+          return;
+        }
+        collaboratorName = val;
+        localStorage.setItem('bauhaus_collaborator_name', collaboratorName);
+        userDisplayId.textContent = collaboratorName;
+        closeUserModal();
+        showToast('Perfil Guardado', `Ahora te identificas como: ${collaboratorName}`, 'text-emerald-500');
+        render();
+      }
+    };
+
+    // ================= FIRESTORE LISTENERS (REGLA 1 SOLUCIONADA) =================
+    function setupFirestoreListeners() {
+      if (!currentUser) return;
+      listenersAttached = true;
+
+      // Usar exactamente las rutas autorizadas por las reglas de seguridad de Firestore
+      const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+      const newsRef = collection(db, 'artifacts', appId, 'public', 'data', 'news');
+
+      console.log(`Conectado de forma segura y homologada a las colecciones globales 'tasks' y 'news'`);
+
+      // Escuchar cambios de Tareas
+      onSnapshot(tasksRef, (snapshot) => {
+        rawTasks = [];
+        snapshot.forEach((doc) => {
+          rawTasks.push({ id: doc.id, ...doc.data() });
+        });
+        filterAndRender();
+      }, (error) => {
+        console.error("Error de permisos o sincronización de tareas:", error);
+        updateSyncStatus('Error de Sinc', 'bg-red-500');
+      });
+
+      // Escuchar cambios de Novedades
+      onSnapshot(newsRef, (snapshot) => {
+        rawNews = [];
+        snapshot.forEach((doc) => {
+          rawNews.push({ id: doc.id, ...doc.data() });
+        });
+        filterAndRender();
+      }, (error) => {
+        console.error("Error de permisos o sincronización de novedades:", error);
+      });
+    }
+
+    // Filtrar los datos cargados para que solo se muestren los de la tienda seleccionada
+    function filterAndRender() {
+      // Filtrar en memoria por la tienda actual ( storeCode )
+      tasks = rawTasks.filter(t => t.storeCode === storeCode);
+      tasks.sort((a, b) => b.createdAt - a.createdAt);
+
+      news = rawNews.filter(n => n.storeCode === storeCode);
+      news.sort((a, b) => b.createdAt - a.createdAt);
+
+      render();
+    }
+
+    function updateSyncStatus(text, bgClass) {
+      syncStatusIndicator.className = `w-2.5 h-2.5 rounded-full ${bgClass} animate-pulse`;
+      syncStatusText.textContent = text;
+    }
+
+    // ================= COMPRESIÓN DE FOTO =================
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400; // Resolución óptima para evitar sobrepasar límites de Firestore
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          callback(dataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ================= CONTROLADORES DE CÁMARA =================
+    window.handleTaskPhoto = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('taskPhotoStatus').textContent = "Procesando...";
+      compressImage(file, (base64) => {
+        tempTaskPhoto = base64;
+        document.getElementById('taskPhotoStatus').textContent = "Cargada";
+        document.getElementById('taskPhotoPreview').src = base64;
+        document.getElementById('taskPhotoPreviewContainer').classList.remove('hidden');
+      });
+    };
+
+    window.clearTaskPhoto = function() {
+      tempTaskPhoto = "";
+      document.getElementById('taskCameraInput').value = "";
+      document.getElementById('taskPhotoStatus').textContent = "Ninguna foto";
+      document.getElementById('taskPhotoPreviewContainer').classList.add('hidden');
+    };
+
+    window.handleNewsPhoto = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('newsPhotoStatus').textContent = "Procesando...";
+      compressImage(file, (base64) => {
+        tempNewsPhoto = base64;
+        document.getElementById('newsPhotoStatus').textContent = "Cargada";
+        document.getElementById('newsPhotoPreview').src = base64;
+        document.getElementById('newsPhotoPreviewContainer').classList.remove('hidden');
+      });
+    };
+
+    window.clearNewsPhoto = function() {
+      tempNewsPhoto = "";
+      document.getElementById('newsCameraInput').value = "";
+      document.getElementById('newsPhotoStatus').textContent = "Sin adjunto";
+      document.getElementById('newsPhotoPreviewContainer').classList.add('hidden');
+    };
+
+    // ================= VISOR LIGHTBOX =================
+    window.openLightbox = function(imageSrc, captionText = "") {
+      const lightbox = document.getElementById('imageLightbox');
+      const lightboxImg = document.getElementById('lightboxImage');
+      const lightboxCaption = document.getElementById('lightboxCaption');
+
+      lightboxImg.src = imageSrc;
+      lightboxCaption.textContent = captionText;
+      lightbox.classList.remove('hidden');
+    };
+
+    window.closeLightbox = function() {
+      document.getElementById('imageLightbox').classList.add('hidden');
+    };
+
+    // ================= NAVEGACIÓN Y PESTAÑAS =================
+    window.showTab = function(id) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+
+      // Botones Escritorio
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-red-650', 'text-white', 'shadow-lg', 'shadow-red-900/20');
+        btn.classList.add('text-slate-400', 'hover:bg-slate-900', 'hover:text-white');
+      });
+      const currentBtn = document.getElementById(`btn-${id}`);
+      if (currentBtn) {
+        currentBtn.classList.remove('text-slate-400', 'hover:bg-slate-900', 'hover:text-white');
+        currentBtn.classList.add('bg-red-650', 'text-white', 'shadow-lg', 'shadow-red-900/20');
+      }
+
+      // Botones Móvil
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        btn.classList.remove('text-white');
+        btn.classList.add('text-slate-400');
+      });
+      const currentMobileBtn = document.getElementById(`mobile-btn-${id}`);
+      if (currentMobileBtn) {
+        currentMobileBtn.classList.add('text-white');
+        currentMobileBtn.classList.remove('text-slate-400');
+      }
+
+      if (id === 'dashboard') {
+        setTimeout(() => {
+          renderChart();
+          renderCalendar();
+          renderDayTasks();
+        }, 50);
+      }
+    };
+
+    window.toggleNewTaskForm = function() {
+      const container = document.getElementById('taskFormContainer');
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      } else {
+        container.classList.add('hidden');
+      }
+    };
+
+    // ================= OPERACIONES CRUD =================
+    window.saveTask = async function() {
+      const titleVal = document.getElementById('title').value.trim();
+      const responsibleVal = document.getElementById('responsible').value.trim();
+      const priorityVal = document.getElementById('priority').value;
+      const dateVal = document.getElementById('date').value;
+      const statusVal = document.getElementById('status').value;
+      const obsVal = document.getElementById('obs').value.trim();
+
+      if (!titleVal || !responsibleVal || !dateVal) {
+        showToast('Campos obligatorios', 'Por favor complete título, responsable y fecha.', 'text-amber-500');
+        return;
+      }
+
+      const newTaskObj = {
+        title: titleVal,
+        responsible: responsibleVal,
+        priority: priorityVal,
+        date: dateVal,
+        status: statusVal,
+        obs: obsVal || "",
+        image: tempTaskPhoto || "",
+        createdAt: Date.now(),
+        createdBy: collaboratorName,
+        storeCode: storeCode // Guardar con la etiqueta de la tienda para filtrado en memoria
+      };
+
+      try {
+        const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+        await addDoc(tasksRef, newTaskObj);
+        showToast('Tarea guardada', 'Registrada de forma segura en la nube.', 'text-emerald-500');
+        postSaveCleanup();
+      } catch (error) {
+        console.error("Error al guardar tarea en Firebase:", error);
+        showToast('Error de guardado', 'No se pudo sincronizar en línea por problemas de red.', 'text-red-500');
+      }
+    };
+
+    function postSaveCleanup() {
+      document.getElementById('title').value = '';
+      document.getElementById('responsible').value = '';
+      document.getElementById('obs').value = '';
+      clearTaskPhoto();
+      toggleNewTaskForm();
+      filterAndRender();
+    }
+
+    window.delTask = async function(id) {
+      try {
+        const taskDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id);
+        await deleteDoc(taskDocRef);
+        showToast('Tarea eliminada', 'Se ha retirado de la base de datos.', 'text-amber-500');
+      } catch (error) {
+        console.error("Error borrando de Firebase:", error);
+        showToast('Fallo al borrar', 'Error en la conexión a la nube.', 'text-red-500');
+      }
+    };
+
+    window.saveNews = async function() {
+      const newsTitleVal = document.getElementById('newsTitle').value.trim();
+      const newsTextVal = document.getElementById('newsText').value.trim();
+
+      if (!newsTitleVal || !newsTextVal) {
+        showToast('Campos vacíos', 'Por favor complete título y descripción del comunicado.', 'text-amber-500');
+        return;
+      }
+
+      const newPost = {
+        title: newsTitleVal,
+        text: newsTextVal,
+        date: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }),
+        image: tempNewsPhoto || "",
+        createdAt: Date.now(),
+        createdBy: collaboratorName,
+        storeCode: storeCode // Guardar con la etiqueta de la tienda para filtrado en memoria
+      };
+
+      try {
+        const newsRef = collection(db, 'artifacts', appId, 'public', 'data', 'news');
+        await addDoc(newsRef, newPost);
+        showToast('Comunicado publicado', 'Difundido a todos los colaboradores.', 'text-emerald-500');
+        postNewsCleanup();
+      } catch (error) {
+        console.error("Fallo publicando circular:", error);
+        showToast('Error', 'No se ha podido enviar a la nube.', 'text-red-500');
+      }
+    };
+
+    function postNewsCleanup() {
+      document.getElementById('newsTitle').value = '';
+      document.getElementById('newsText').value = '';
+      clearNewsPhoto();
+      filterAndRender();
+    }
+
+    // ================= FUNCIONES DEL CALENDARIO MENSUAL INTERACTIVO =================
+    const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    window.prevMonth = function() {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+      renderCalendar();
+    };
+
+    window.nextMonth = function() {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+      renderCalendar();
+    };
+
+    window.selectDate = function(year, month, day) {
+      selectedCalendarDate = new Date(year, month, day);
+      renderCalendar();
+      renderDayTasks();
+    };
+
+    function renderCalendar() {
+      const year = currentCalendarDate.getFullYear();
+      const month = currentCalendarDate.getMonth();
+
+      // Actualizar título del calendario (Mes Año)
+      const calMonthYearLabel = document.getElementById('calendarMonthYear');
+      if (calMonthYearLabel) {
+        calMonthYearLabel.textContent = `${MONTHS[month]} ${year}`;
+      }
+
+      const calendarDaysGrid = document.getElementById('calendarDays');
+      if (!calendarDaysGrid) return;
+      calendarDaysGrid.innerHTML = '';
+
+      // Obtener primer día del mes e índice de inicio (lunes=0...domingo=6)
+      let firstDayIndex = new Date(year, month, 1).getDay() - 1;
+      if (firstDayIndex === -1) firstDayIndex = 6; // Ajuste para Domingo en JS
+
+      const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // Celdas vacías para el espacio inicial del mes
+      for (let i = 0; i < firstDayIndex; i++) {
+        const emptyCell = document.createElement('div');
+        calendarDaysGrid.appendChild(emptyCell);
+      }
+
+      const today = new Date();
+
+      // Renderizar cada día del mes
+      for (let day = 1; day <= totalDaysInMonth; day++) {
+        const dayButton = document.createElement('button');
+        dayButton.textContent = day;
+        dayButton.type = "button";
+
+        // Formato para comparar con la propiedad .date de las tareas (YYYY-MM-DD)
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        // Comprobar si hay tareas agendadas en este día específico
+        const dayTasks = tasks.filter(t => t.date === dateStr);
+        const hasTasks = dayTasks.length > 0;
+
+        // Comprobar si este día es el actualmente seleccionado por el usuario
+        const isSelected = selectedCalendarDate.getFullYear() === year &&
+                           selectedCalendarDate.getMonth() === month &&
+                           selectedCalendarDate.getDate() === day;
+
+        // Comprobar si es el día de hoy real
+        const isToday = today.getFullYear() === year &&
+                        today.getMonth() === month &&
+                        today.getDate() === day;
+
+        // Estilos base y dinámicos para los días
+        let baseClass = "p-2 rounded-lg font-bold text-xs transition-all flex flex-col items-center justify-center relative cursor-pointer ";
+        
+        if (isSelected) {
+          baseClass += "border-2 border-slate-300 text-white shadow bg-slate-800 ";
+        } else if (hasTasks) {
+          // Resaltado estilo Bauhaus rojo para días con tareas asignadas
+          baseClass += "bg-red-950/60 text-red-400 border border-red-500/30 hover:bg-red-900/40 ";
+        } else {
+          baseClass += "text-slate-400 hover:text-white hover:bg-slate-900 ";
+        }
+
+        if (isToday) {
+          baseClass += "ring-1 ring-red-500 ";
+        }
+
+        dayButton.className = baseClass;
+        dayButton.onclick = () => selectDate(year, month, day);
+
+        // Indicador discreto si contiene tareas debajo del número
+        if (hasTasks && !isSelected) {
+          const dot = document.createElement('span');
+          dot.className = "w-1 h-1 bg-red-500 rounded-full mt-0.5";
+          dayButton.appendChild(dot);
+        }
+
+        calendarDaysGrid.appendChild(dayButton);
+      }
+      refreshIcons();
+    }
+
+    // ================= APARTADO TAREAS DEL DÍA SELECCIONADO =================
+    function renderDayTasks() {
+      const dayTasksContainer = document.getElementById('dayTasksContainer');
+      const dayTasksTitle = document.getElementById('dayTasksTitle');
+      const dayTasksDate = document.getElementById('dayTasksDate');
+
+      if (!dayTasksContainer || !dayTasksTitle || !dayTasksDate) return;
+
+      const year = selectedCalendarDate.getFullYear();
+      const month = selectedCalendarDate.getMonth();
+      const day = selectedCalendarDate.getDate();
+
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayTasks = tasks.filter(t => t.date === dateStr);
+
+      // Formato para mostrar la fecha de manera legible
+      const displayDateStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+      dayTasksDate.textContent = displayDateStr;
+
+      const today = new Date();
+      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+
+      dayTasksTitle.textContent = isToday ? "Tareas de Hoy" : "Tareas Programadas";
+
+      if (dayTasks.length === 0) {
+        dayTasksContainer.innerHTML = `
+          <div class="text-center py-6 text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-900/40">
+            <p class="text-xs">No hay directivas programadas para esta fecha.</p>
+          </div>
+        `;
+        return;
+      }
+
+      dayTasksContainer.innerHTML = dayTasks.map(t => {
+        let priorityColor = "text-slate-400 bg-slate-900";
+        if (t.priority === "Alta") priorityColor = "text-red-400 bg-red-950/40 border border-red-900/30";
+        if (t.priority === "Media") priorityColor = "text-amber-400 bg-amber-950/40 border border-amber-900/30";
+
+        let statusColor = "bg-slate-800 text-slate-400";
+        if (t.status === "Pendiente") statusColor = "bg-amber-950 text-amber-500 border border-amber-900/20";
+        if (t.status === "En curso") statusColor = "bg-red-950 text-red-500 border border-red-900/20";
+        if (t.status === "Completada") statusColor = "bg-emerald-950 text-emerald-500 border border-emerald-900/20";
+
+        return `
+          <div class="p-3 bg-slate-900 rounded-xl border border-slate-850 flex items-center justify-between gap-3 hover:border-slate-800 transition-all">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${priorityColor}">${t.priority}</span>
+                <span class="text-[10px] font-semibold text-slate-400">${t.responsible}</span>
+              </div>
+              <h4 class="font-bold text-slate-200 text-xs truncate">${t.title}</h4>
+              ${t.obs ? `<p class="text-[10px] text-slate-500 truncate mt-0.5">${t.obs}</p>` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded border ${statusColor}">${t.status}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= RENDERIZADO GENERAL =================
+    function render() {
+      const searchTxt = (document.getElementById('search')?.value || '').toLowerCase();
+
+      const filteredTasks = tasks.filter(t => {
+        return (t.title || '').toLowerCase().includes(searchTxt) ||
+               (t.responsible || '').toLowerCase().includes(searchTxt) ||
+               (t.status || '').toLowerCase().includes(searchTxt) ||
+               (t.priority || '').toLowerCase().includes(searchTxt);
+      });
+
+      if (filteredTasks.length === 0) {
+        taskRows.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+              <div class="flex flex-col items-center gap-2">
+                <i data-lucide="search-slash" class="w-8 h-8 text-slate-600"></i>
+                <span>No se encontraron resultados para el filtro</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        taskRows.innerHTML = filteredTasks.map(t => {
+          let badgeClass = 'bg-slate-800 text-slate-400';
+          if (t.status === 'Pendiente') badgeClass = 'bg-amber-950/80 text-amber-400 border border-amber-900/40';
+          if (t.status === 'En curso') badgeClass = 'bg-red-950/80 text-red-400 border border-red-900/40'; 
+          if (t.status === 'Completada') badgeClass = 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/40';
+
+          let priorityClass = 'text-slate-500';
+          if (t.priority === 'Alta') priorityClass = 'text-red-500 font-bold';
+          if (t.priority === 'Media') priorityClass = 'text-amber-500 font-semibold';
+
+          const thumbnailHtml = t.image 
+            ? `<button onclick="openLightbox('${t.image}', '${t.title}')" class="mt-2 block w-9 h-9 rounded-lg border border-slate-800 overflow-hidden hover:opacity-80 transition-all">
+                 <img src="${t.image}" class="w-full h-full object-cover">
+               </button>` 
+            : '';
+
+          return `
+            <tr class="hover:bg-slate-900/40 transition-all">
+              <td class="px-6 py-4 font-semibold text-slate-100">
+                <span class="block text-slate-200">${t.title}</span>
+                ${t.obs ? `<p class="text-xs text-slate-500 font-normal mt-0.5">${t.obs}</p>` : ''}
+                ${thumbnailHtml}
+              </td>
+              <td class="px-6 py-4 text-slate-400 font-medium">${t.responsible}</td>
+              <td class="px-6 py-4"><span class="${priorityClass} text-xs">${t.priority}</span></td>
+              <td class="px-6 py-4 text-slate-500 font-mono text-[11px]">${t.date}</td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeClass}">${t.status}</span></td>
+              <td class="px-6 py-4 text-right">
+                <button onclick="delTask('${t.id}')" class="text-slate-500 hover:text-red-500 hover:bg-slate-900 p-2 rounded-lg transition-all" title="Retirar Directiva">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Render de Novedades
+      if (news.length === 0) {
+        newsContainer.innerHTML = `
+          <div class="bg-slate-950 p-8 rounded-xl border border-slate-850 text-center text-slate-500">
+            <div class="flex flex-col items-center gap-2">
+              <i data-lucide="megaphone-off" class="w-8 h-8 text-slate-600"></i>
+              <span>No hay novedades corporativas publicadas actualmente.</span>
+            </div>
+          </div>
+        `;
+      } else {
+        newsContainer.innerHTML = news.map(n => {
+          const imageHtml = n.image
+            ? `<div class="mt-3 overflow-hidden rounded-lg border border-slate-850 max-h-56 bg-slate-900">
+                 <img src="${n.image}" onclick="openLightbox('${n.image}', '${n.title}')" class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-all">
+               </div>`
+            : '';
+
+          return `
+            <div class="bg-slate-950 p-5 rounded-xl border border-slate-850 shadow-md hover:border-slate-800 transition-all relative">
+              <div class="flex items-start justify-between gap-4 mb-2">
+                <h4 class="font-bold text-slate-100 text-sm">${n.title}</h4>
+                <span class="text-[10px] text-slate-500 font-mono bg-slate-900 px-2 py-0.5 rounded">${n.date}</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap">${n.text}</p>
+              ${imageHtml}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Actualizar Métricas Dashboard
+      const p = tasks.filter(x => x.status === 'Pendiente').length;
+      const c = tasks.filter(x => x.status === 'En curso').length;
+      const d = tasks.filter(x => x.status === 'Completada').length;
+
+      document.getElementById('kpiTotal').textContent = tasks.length;
+      document.getElementById('kpiPending').textContent = p;
+      document.getElementById('kpiProgress').textContent = c;
+      document.getElementById('kpiDone').textContent = d;
+
+      renderChart(p, c, d);
+      renderCalendar();
+      renderDayTasks();
+      refreshIcons();
+    }
+
+    // ================= RENDER DE CHART (Optimizado) =================
+    function renderChart(pending = 0, inProgress = 0, completed = 0) {
+      const ctx = document.getElementById('chart');
+      if (!ctx) return;
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Pendientes', 'En curso', 'Completadas'],
+          datasets: [{
+            label: 'Estado General',
+            data: [pending, inProgress, completed],
+            backgroundColor: [
+              'rgba(245, 158, 11, 0.2)',
+              'rgba(239, 68, 68, 0.2)',
+              'rgba(16, 185, 129, 0.2)'
+            ],
+            borderColor: [
+              '#f59e0b',
+              '#ef4444',
+              '#10b981'
+            ],
+            borderWidth: 2,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              grid: { color: '#1e293b' },
+              ticks: { color: '#94a3b8', precision: 0 }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    // ================= EXPORTACIÓN E IMPORTACIÓN JSON =================
+    window.exportData = function() {
+      const blob = new Blob([JSON.stringify({ tasks, news }, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `intranet_respaldo_bauhaus_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      showToast('Descarga Exitosa', 'El respaldo en formato JSON ha sido creado.', 'text-emerald-500');
+    };
+
+    window.importData = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function() {
+        try {
+          const data = JSON.parse(reader.result);
+          const importedTasks = data.tasks || [];
+          const importedNews = data.news || [];
+
+          if (importedTasks.length === 0 && importedNews.length === 0) {
+            showToast('Formato Inválido', 'El archivo no contiene datos estructurados compatibles.', 'text-amber-500');
+            return;
+          }
+
+          updateSyncStatus('Importando...', 'bg-amber-500');
+          const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+          for (const item of importedTasks) {
+            await addDoc(tasksRef, {
+              title: item.title || "Directiva Importada",
+              responsible: item.responsible || "Personal",
+              priority: item.priority || "Media",
+              date: item.date || new Date().toISOString().split('T')[0],
+              status: item.status || "Pendiente",
+              obs: item.obs || "",
+              image: item.image || "",
+              createdAt: Date.now(),
+              createdBy: item.createdBy || "import-tool",
+              storeCode: storeCode
+            });
+          }
+          showToast('Sincronización Completada', 'Los registros se han guardado directamente en la nube.', 'text-emerald-500');
+        } catch (err) {
+          console.error("Error importando JSON:", err);
+          showToast('Fallo crítico', 'El JSON cargado posee errores internos.', 'text-rose-500');
+        } finally {
+          updateSyncStatus('En línea', 'bg-emerald-500');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    // ================= TOAST / NOTIFICACIONES FLOTANTES =================
+    window.showToast = function(title, body, textClass = 'text-red-500') {
+      const toast = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastBody = document.getElementById('toastBody');
+
+      toastTitle.textContent = title;
+      toastBody.textContent = body;
+      toastIcon.className = textClass;
+
+      toast.classList.remove('hidden');
+      setTimeout(hideToast, 5000);
+    };
+
+    window.hideToast = function() {
+      document.getElementById('toastMessage').classList.add('hidden');
+    };
+
+    // ================= CONTROLADOR MODAL CONFIGURACIÓN DE SEGURIDAD =================
+    window.toggleConfigModal = function() {
+      const modal = document.getElementById('configModal');
+      const configTextarea = document.getElementById('firebaseConfigInput');
+      const appInput = document.getElementById('appIdInput');
+      
+      if (modal.classList.contains('hidden')) {
+        configTextarea.value = JSON.stringify(firebaseConfig, null, 2);
+        appInput.value = storeCode;
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    };
+
+    window.saveFirebaseConfig = function() {
+      const configInput = document.getElementById('firebaseConfigInput').value;
+      const appInput = document.getElementById('appIdInput').value;
+
+      try {
+        const parsed = JSON.parse(configInput);
+        localStorage.setItem('bauhaus_custom_firebase_config', JSON.stringify(parsed));
+        localStorage.setItem('bauhaus_custom_app_id', appInput);
+        
+        toggleConfigModal();
+        showToast('Guardado', 'Se recargará la página para aplicar los cambios de base de datos.', 'text-emerald-500');
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        showToast('Configuración Inválida', 'Asegúrese de ingresar un objeto JSON de Firebase válido.', 'text-red-500');
+      }
+    };
+
+    window.resetFirebaseConfig = function() {
+      localStorage.removeItem('bauhaus_custom_firebase_config');
+      localStorage.removeItem('bauhaus_custom_app_id');
+      toggleConfigModal();
+      showToast('Configuración Reestablecida', 'Recargando con credenciales por defecto.', 'text-amber-500');
+      setTimeout(() => window.location.reload(), 1500);
+    };
+
+  </script>
+</body>
+</html>
